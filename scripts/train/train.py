@@ -132,6 +132,9 @@ def main(cfg):
     init_context = contextlib.nullcontext()
     if 'init_device' in cfg.model:
         assert cfg.model.init_device in ['meta', 'cpu']
+        # Initialize rank 0 on CPU so we can broadcast weights
+        # if dist.get_global_rank() == 0:
+        cfg.model.init_device = 'cpu'
         if fsdp_config is None and cfg.model.init_device == 'meta':
             warnings.warn(
                 "Using `cfg.model.init_device='meta'` is only valid when using FSDP! " +\
