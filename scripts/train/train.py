@@ -152,6 +152,7 @@ def main(cfg):
         model = build_composer_model(cfg.model, tokenizer)
     cfg.n_params = sum(p.numel() for p in model.parameters())
     print(f'{cfg.n_params=:.2e}')
+    dist.barrier()  # CPU init on rank 0 is slower, so wait for all ranks to finish
 
     # Dataloaders
     print('Building train loader...')
