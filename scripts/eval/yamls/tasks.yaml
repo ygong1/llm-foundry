@@ -6,11 +6,11 @@ icl_tasks:
   icl_task_type: language_modeling
   continuation_delimiter: '\nAnswer: ' # this separates questions from answers
   has_categories: true
--
-  label: triviaqa
-  dataset_uri: eval/local_data/world_knowledge/triviaqa.jsonl # ADD YOUR OWN DATASET URI
-  num_fewshot: [0]
-  icl_task_type: question_answering
+# -
+#   label: triviaqa
+#   dataset_uri: eval/local_data/world_knowledge/triviaqa.jsonl # ADD YOUR OWN DATASET URI
+#   num_fewshot: [0]
+#   icl_task_type: question_answering
 -
   label: bigbench_qa_wikidata
   dataset_uri: eval/local_data/world_knowledge/bigbench_qa_wikidata.jsonl # ADD YOUR OWN DATASET URI
