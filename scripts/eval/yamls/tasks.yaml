@@ -111,11 +111,11 @@ icl_tasks:
 #   dataset_uri: eval/local_data/language_understanding/bigbench_conceptual_combinations.jsonl
 #   num_fewshot: [0, 10]
 #   icl_task_type: multiple_choice
-# -
-#   label: bigbench_elementary_math_qa
-#   dataset_uri: eval/local_data/symbolic_problem_solving/bigbench_elementary_math_qa.jsonl
-#   num_fewshot: [0, 10]
-#   icl_task_type: multiple_choice
+-
+  label: bigbench_elementary_math_qa
+  dataset_uri: eval/local_data/symbolic_problem_solving/bigbench_elementary_math_qa.jsonl
+  num_fewshot: [10]
+  icl_task_type: multiple_choice
 -
   label: bigbench_dyck_languages
   dataset_uri: eval/local_data/symbolic_problem_solving/bigbench_dyck_languages.jsonl
