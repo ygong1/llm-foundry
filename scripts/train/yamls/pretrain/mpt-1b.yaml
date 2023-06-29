@@ -1,5 +1,5 @@
-data_local: ./my-copy-c4
-data_remote: # If blank, files must be present in data_local
+data_local: 
+data_remote: s3://aaron-mlflow-demo/ygong-c4-process
 max_seq_len: 2048
 global_seed: 17
 
