@@ -72,7 +72,7 @@ class StreamingTextDataset(StreamingDataset):
                  local: Optional[str] = None,
                  split: Optional[str] = None,
                  download_retry: int = 2,
-                 download_timeout: float = 60,
+                 download_timeout: float = 600,
                  validate_hash: Optional[str] = None,
                  keep_zip: bool = False,
                  epoch_size: Optional[int] = None,
@@ -238,6 +238,7 @@ def build_text_dataloader(
     dataset = StreamingTextDataset(
         tokenizer=tokenizer,
         streams=streams,
+        download_timeout=600,
         **cfg.dataset,
     )
 
