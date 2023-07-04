@@ -108,7 +108,7 @@ class StreamingTextDataset(StreamingDataset):
                         f'local directory {local} does not contain split {split}'
                     )
         s = YStream(remote=remote,
-                         local=local,
+                         local="/tmp/ygong/runs/",
                          split=split,
                          download_retry=download_retry,
                          download_timeout=download_timeout,
