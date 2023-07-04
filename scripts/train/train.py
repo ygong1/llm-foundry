@@ -6,6 +6,8 @@ import os
 import sys
 import warnings
 
+sys.path.append("/Users/yu.gong/workspace/mosaic/llm-foundry/")
+
 from composer import Trainer
 from composer.core import Evaluator
 from composer.utils import dist, get_device, reproducibility
@@ -17,6 +19,7 @@ from llmfoundry import (COMPOSER_MODEL_REGISTRY, ComposerHFCausalLM,
                         MPTForCausalLM, build_finetuning_dataloader,
                         build_text_denoising_dataloader)
 from llmfoundry.data.text_data import build_text_dataloader
+# from llmfoundry.data.text_data import build_text_dataloader
 from llmfoundry.models.utils import init_empty_weights
 from llmfoundry.utils.builders import (build_algorithm, build_callback,
                                        build_icl_evaluators, build_logger,
@@ -67,6 +70,7 @@ def build_composer_model(model_cfg, tokenizer):
     if model_cfg.name not in COMPOSER_MODEL_REGISTRY:
         raise ValueError(
             f'Not sure how to build model with name={model_cfg.name}')
+    print(f'model name is {model_cfg.name}')
     return COMPOSER_MODEL_REGISTRY[model_cfg.name](model_cfg, tokenizer)
 
 
@@ -113,6 +117,7 @@ def print_trainable_parameters(model) -> None:
 
 
 def build_dataloader(cfg, tokenizer, device_batch_size):
+    print(f"ygong: dataloader name {cfg.name}")
     if cfg.name == 'text':
         return build_text_dataloader(
             cfg,
@@ -204,18 +209,19 @@ def main(cfg):
     tokenizer = build_tokenizer(cfg.tokenizer)
 
     # Build Model
-    print('Initializing model...')
-    with init_context:
-        if cfg.get('lora',
-                   None) is not None:  # frozen model + trainable lora modules
-            model: ComposerHFCausalLM = build_composer_peft_model(
-                cfg.model, cfg.lora, tokenizer)
-            print_trainable_parameters(model)  # should not be 100%
-        else:  # standard model
-            model = build_composer_model(cfg.model, tokenizer)
-    cfg.n_params = sum(p.numel() for p in model.parameters())
-    print(f'{cfg.n_params=:.2e}')
-
+    # print('Initializing model...')
+    # with init_context:
+    #     if cfg.get('lora',
+    #                None) is not None:  # frozen model + trainable lora modules
+    #         model: ComposerHFCausalLM = build_composer_peft_model(
+    #             cfg.model, cfg.lora, tokenizer)
+    #         print_trainable_parameters(model)  # should not be 100%
+    #     else:  # standard model
+    #         cfg.model.loss_fn="torch_crossentropy"
+    #         model = build_composer_model(cfg.model, tokenizer)
+    # cfg.n_params = sum(p.numel() for p in model.parameters())
+    # print(f'{cfg.n_params=:.2e}')
+    
     # Dataloaders
     print('Building train loader...')
     train_loader = build_dataloader(

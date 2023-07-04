@@ -205,13 +205,22 @@ class ConcatenatedSequenceCollatorWrapper:
         left_zeros = cumulative_sep.new_zeros((cumulative_sep.shape[0], 1))
         return torch.cat([left_zeros, cumulative_sep[:, :-1]], dim=1)
 
+def ygong_build_text_dataloader(
+    cfg: DictConfig,
+    tokenizer: Tokenizer,
+    device_batch_size: int,
+):
+    return build_text_dataloader(cfg, tokenizer, device_batch_size)
+
 
 def build_text_dataloader(
     cfg: DictConfig,
     tokenizer: Tokenizer,
     device_batch_size: int,
 ):
+    # raise NotImplementedError(f"ygong: cfg.dataset is {cfg.dataset}")
     assert cfg.name == 'text', f'Tried to build text dataloader with cfg.name={cfg.name}'
+    print(f"ygong: cfg.dataset is {cfg.dataset}")
     if cfg.dataset.get('group_method', None) is not None:
         raise NotImplementedError(
             'group_method is deprecated and has been removed.\nTo ' +
@@ -224,6 +233,8 @@ def build_text_dataloader(
     mlm_probability = cfg.dataset.pop('mlm_probability', None)
     eos_token_id = cfg.dataset.pop('eos_token_id', None)
     bos_token_id = cfg.dataset.pop('bos_token_id', None)
+
+    print(f"ygong: cfg.dataset is {streams_dict}, {mlm_probability}, {eos_token_id}, {bos_token_id}")
 
     # build streams
     streams = None
