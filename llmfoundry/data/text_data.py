@@ -15,6 +15,8 @@ from omegaconf import OmegaConf as om
 from streaming import Stream, StreamingDataset
 from torch.utils.data import DataLoader
 from transformers import PreTrainedTokenizer, PreTrainedTokenizerFast
+from steamtest import YStream
+
 
 Tokenizer = Union[PreTrainedTokenizer, PreTrainedTokenizerFast]
 
@@ -105,10 +107,18 @@ class StreamingTextDataset(StreamingDataset):
                     raise ValueError(
                         f'local directory {local} does not contain split {split}'
                     )
+        s = YStream(remote=remote,
+                         local=local,
+                         split=split,
+                         download_retry=download_retry,
+                         download_timeout=download_timeout,
+                         validate_hash=validate_hash,
+                         keep_zip=keep_zip)
+
 
         # Build Dataset
         super().__init__(
-            streams=streams,
+            streams=[s],
             remote=remote,
             local=local,
             split=split,

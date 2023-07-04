@@ -476,15 +476,15 @@ class YStream:
         filename = os.path.join(self.local, self.split, get_index_basename())
         return os.stat(filename).st_size
 
-if __name__ == '__main__':
- s = YStream(
-     remote = "s3://aaron-mlflow-demo/ygong-c4-process",
-     local=None,
-     split="train_small",
-     download_retry=2,
-     download_timeout=10*60,
-     keep_zip=False,
-     validate_hash=None)
- w = World()
- print(f"world info: is local leader {w.is_local_leader}, is leader: {w.is_leader}, rank: {w.rank}")
- s.get_shards(w)
+# if __name__ == '__main__':
+#  s = YStream(
+#      remote = "s3://aaron-mlflow-demo/ygong-c4-process",
+#      local=None,
+#      split="train_small",
+#      download_retry=2,
+#      download_timeout=10*60,
+#      keep_zip=False,
+#      validate_hash=None)
+#  w = World()
+#  print(f"world info: is local leader {w.is_local_leader}, is leader: {w.is_leader}, rank: {w.rank}")
+#  s.get_shards(w)
