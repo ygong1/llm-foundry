@@ -15,7 +15,7 @@ from omegaconf import OmegaConf as om
 from streaming import Stream, StreamingDataset
 from torch.utils.data import DataLoader
 from transformers import PreTrainedTokenizer, PreTrainedTokenizerFast
-from steamtest import YStream
+from .steamtest import YStream
 
 
 Tokenizer = Union[PreTrainedTokenizer, PreTrainedTokenizerFast]
