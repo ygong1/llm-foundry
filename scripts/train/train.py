@@ -209,18 +209,18 @@ def main(cfg):
     tokenizer = build_tokenizer(cfg.tokenizer)
 
     # Build Model
-    # print('Initializing model...')
-    # with init_context:
-    #     if cfg.get('lora',
-    #                None) is not None:  # frozen model + trainable lora modules
-    #         model: ComposerHFCausalLM = build_composer_peft_model(
-    #             cfg.model, cfg.lora, tokenizer)
-    #         print_trainable_parameters(model)  # should not be 100%
-    #     else:  # standard model
-    #         cfg.model.loss_fn="torch_crossentropy"
-    #         model = build_composer_model(cfg.model, tokenizer)
-    # cfg.n_params = sum(p.numel() for p in model.parameters())
-    # print(f'{cfg.n_params=:.2e}')
+    print('Initializing model...')
+    with init_context:
+        if cfg.get('lora',
+                   None) is not None:  # frozen model + trainable lora modules
+            model: ComposerHFCausalLM = build_composer_peft_model(
+                cfg.model, cfg.lora, tokenizer)
+            print_trainable_parameters(model)  # should not be 100%
+        else:  # standard model
+            cfg.model.loss_fn="torch_crossentropy"
+            model = build_composer_model(cfg.model, tokenizer)
+    cfg.n_params = sum(p.numel() for p in model.parameters())
+    print(f'{cfg.n_params=:.2e}')
     
     # Dataloaders
     print('Building train loader...')
