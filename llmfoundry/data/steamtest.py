@@ -23,7 +23,7 @@ from streaming.base.world import World
 from time import sleep, time
 
 def ygong_wait_for_file_to_exist(filename: str, poll_interval: float, timeout: float,
-                           err_msg: str, world: World) -> None:
+                           err_msg: str, w: World) -> None:
     """Wait for the file to exist till timeout seconds. Raise an Exception after that.
 
     Args:
@@ -42,7 +42,7 @@ def ygong_wait_for_file_to_exist(filename: str, poll_interval: float, timeout: f
             sleep(poll_interval)
             break
         dt = time() - start_time
-        print(f"world info: is local leader {w.is_local_leader}, is leader: {w.is_leader}, rank: {w.rank}, waited for: {dt}")
+        print(f"world info: is local leader {w.is_local_leader}, is leader: {w.is_leader}, rank: {w.rank}, waited for: {dt}s for {filename}")
         if dt > timeout:
             raise RuntimeError(f'{err_msg}' + f'{timeout:.3f} < {dt:.3f} secs.')
 
