@@ -58,7 +58,11 @@ class MPT125MConfig:
         # self.mlflow_trackingUri = "databricks" if workspace_url is None else workspace_url
 
         self.data = data
+
+        # Scheudling parameters
         self.priority = priority
+        self.preemptible = preemptible
+        self.retry_on_system_failure = retry_on_system_failure
         
         # the run name is pre-configured for all config-driven pretrain runs
         self.name = "mpt125m-config-driven-pretrain"
@@ -111,7 +115,11 @@ class MPT125MConfig:
             image='mosaicml/llm-foundry:2.2.1_cu121_flash2-latest',
             command="\n".join(self.commands),
             compute=scalingConfig.toCompute,
-            scheduling={'priority': self.priority},
+            scheduling={
+                'priority': self.priority,
+                'preemptible': self.preemptible,
+                'retry_on_system_failure': self.retry_on_system_failure
+            },
             integrations=[
                 {
                    'integration_type': 'git_repo',
