@@ -38,7 +38,6 @@ def _init_connection():
         data = json.loads(base64.b64decode(os.environ.get('CREDENTIALS')).decode('utf-8'))
         workspace_url = data.get("workspace_url", None)
         token = data.get("token", None)
-        mosaic_token = data.get("mosaic_token", None)
         # set up the mosaic token
         conf = MCLIConfig.load_config()
         conf.api_key = mosaic_token
