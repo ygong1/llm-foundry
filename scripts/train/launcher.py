@@ -418,11 +418,9 @@ def _monitor_processes(
         processes: Dict[int, subprocess.Popen], 
         log_dirs: set[str],
         launcher_log: str,):
-    import mlflow
     log_frequency = 200
     cycle = 0
                     
-    mlflow_runid = None
     try:
         while True:
             process_has_crashed = False
@@ -430,6 +428,7 @@ def _monitor_processes(
             for global_rank, process in processes.items():
                 if process.poll() is None:
                     # the process is still running
+                    log.warning(f'Rank {global_rank} is still running.')
                     all_processes_finished = False
                     continue
                 else:
@@ -440,9 +439,10 @@ def _monitor_processes(
                         break
                     else:
                         # exited cleanly
-                        log.info(f'Rank {global_rank} finished successfully.')
+                        log.warning(f'Rank {global_rank} finished successfully.')
             if process_has_crashed or all_processes_finished:
                 break
+            log.warning(f'process_has_crashed={process_has_crashed}, all_processes_finished={all_processes_finished}')
 
             if cycle == 0:
                 _logs_upload_to_mlflow(log_dirs, launcher_log)
@@ -453,6 +453,7 @@ def _monitor_processes(
     except KeyboardInterrupt:
         print('Ctrl-C received; terminating training processes.')
         pass
+    log.warning('ygong: exist _monitor_processes!')
 
 
 def _print_process_exit_status(global_rank: int, process: subprocess.Popen):
