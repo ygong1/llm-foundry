@@ -17,6 +17,9 @@ from composer.datasets.in_context_learning_evaluation import \
 from composer.loggers import LoggerDestination
 from composer.models import ComposerModel
 from composer.optim.scheduler import ComposerScheduler
+from composer.loggers import (InMemoryLogger, LoggerDestination,
+                              TensorboardLogger, WandBLogger)
+from composer.optim.scheduler import (ComposerScheduler)
 from composer.utils import dist
 from omegaconf import DictConfig, ListConfig
 from omegaconf import OmegaConf as om
@@ -25,6 +28,10 @@ from torchmetrics import Metric
 from transformers import AutoTokenizer, PreTrainedTokenizerBase
 
 from llmfoundry import registry
+from llmfoundry.callbacks import EvalGauntlet
+from llmfoundry.composerpatch import MLFlowLogger
+
+
 from llmfoundry.callbacks import EvalGauntlet
 from llmfoundry.data.dataloader import build_dataloader
 from llmfoundry.tokenizers.tiktoken import TiktokenTokenizerWrapper
@@ -236,15 +243,30 @@ def build_callback(
                                    kwargs=kwargs)
 
 
-def build_logger(name: str,
-                 kwargs: Optional[Dict[str, Any]] = None) -> LoggerDestination:
-    """Builds a logger from the registry."""
-    return construct_from_registry(name=name,
-                                   registry=registry.loggers,
-                                   partial_function=True,
-                                   pre_validation_function=LoggerDestination,
-                                   post_validation_function=None,
-                                   kwargs=kwargs)
+# <<<<<<< HEAD
+# def build_logger(name: str,
+#                  kwargs: Optional[Dict[str, Any]] = None) -> LoggerDestination:
+#     """Builds a logger from the registry."""
+#     return construct_from_registry(name=name,
+#                                    registry=registry.loggers,
+#                                    partial_function=True,
+#                                    pre_validation_function=LoggerDestination,
+#                                    post_validation_function=None,
+#                                    kwargs=kwargs)
+# =======
+def build_logger(name: str, kwargs: Dict[str, Any]) -> LoggerDestination:
+    if name == 'wandb':
+        return WandBLogger(**kwargs)
+    elif name == 'tensorboard':
+        return TensorboardLogger(**kwargs)
+    elif name == 'in_memory_logger':
+        return InMemoryLogger(**kwargs)
+    elif name == 'mlflow':
+        return MLFlowLogger.MLFlowLogger(**kwargs)
+    elif name == 'inmemory':
+        return InMemoryLogger(**kwargs)
+    else:
+        raise ValueError(f'Not sure how to build logger: {name}')
 
 
 def build_algorithm(name: str,
