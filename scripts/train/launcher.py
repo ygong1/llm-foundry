@@ -356,7 +356,7 @@ def _launch_processes(
                 cmd,
             )
 
-            if local_rank == 0:
+            if local_rank == -1:
                 process = subprocess.Popen(
                     cmd,
                     text=True,
