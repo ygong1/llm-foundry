@@ -10,11 +10,17 @@ class TrainingConfig:
             self,
             name: str,
             commands: List[str],
+            priority: str = 'high',
+            preemptible: bool = False, 
+            retry_on_system_failure: bool = False,
             image: Optional[str] = None):
         self.name = name
         self.mlflow_experimentName = f"/Users/yu.gong@databricks.com/{name}"
         self.commands = commands
         self.image = image if image is not None else 'mosaicml/llm-foundry:2.2.1_cu121_flash2-latest'
+        self.priority = priority
+        self.preemptible = preemptible
+        self.retry_on_system_failure = retry_on_system_failure
         self.hacky_integrations = [
             {
                 'integration_type': 'git_repo',
@@ -48,4 +54,9 @@ class TrainingConfig:
             compute=scalingConfig.toCompute,
             integrations=self.hacky_integrations,
             env_variables=env_variables,
+            scheduling={
+                'priority': self.priority,
+                'preemptible': self.preemptible,
+                'retry_on_system_failure': self.retry_on_system_failure
+            },
         )
