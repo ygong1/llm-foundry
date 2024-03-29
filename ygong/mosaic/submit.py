@@ -19,7 +19,6 @@ import json
 import logging
 import os
 import sys
-from mcli import RunConfig
 import hashlib
 from mcli.config import MCLIConfig
 from mcli.api.engine.engine import MAPIConnection
@@ -152,7 +151,7 @@ def _wait_for_run_status(run: Run, status: RunStatus, inclusive: bool = True):
     logger.debug(f"finish waiting run reached expected status {status}")
     return run
 
-def submit(config: any, scalingConfig: ScalingConfig, sync: bool = False, debug: bool = False, wsfs: Optional[WSFSIntegration] = None):
+def submit(config: any, scalingConfig: ScalingConfig, wait_job_to_finish: bool = False, debug: bool = False, wsfs: Optional[WSFSIntegration] = None):
     if debug:
         stdout_handler = logging.StreamHandler(sys.stdout)
         stdout_handler.setLevel(logging.DEBUG)  # Set minimum log level for the handler
@@ -185,7 +184,7 @@ def submit(config: any, scalingConfig: ScalingConfig, sync: bool = False, debug:
         button = None
     else:
         button = widgets.Button(description="cancel the run")
-        def on_button_clicked(b):
+        def on_button_clicked():
             logger.debug(f"cancel button clicked")
             clear_output(wait=False)
             run = get_run(run_name)
@@ -215,7 +214,7 @@ def submit(config: any, scalingConfig: ScalingConfig, sync: bool = False, debug:
              logger.debug(f"waiting for the MLFLow experiment run to be ready, run status{run.status}")
              pass
 
-    if sync:
+    if wait_job_to_finish:
         logger.debug(f"synchronously waiting for the run to finish.")
         run = _wait_for_run_status(run, RunStatus.TERMINATING, inclusive=False)
         _display_run_summary(_get_run_summary(run, mlflow_experiment_name), None)
