@@ -64,22 +64,22 @@ def _init_connection():
         # clean up the old secret. MosaicML doesn't support multiple databricks secrets
         # would have to clean up the old secret if it exists
         from mcli.api.secrets.api_get_secrets import get_secrets
-        from mcli.api.secrets.api_delete_secrets import delete_secrets
-        from mcli.models.mcli_secret import SecretType
-        s = get_secrets(secret_types=[SecretType.databricks])
-        need_to_create = len(s) == 0
-        if len(s) == 1:
-            if s[0].name != databricks_secret_name:
-                delete_secrets(s)
-                need_to_create = True
-            else:
-                print("databricks secret already exists")
-        if need_to_create:
-            from mcli.objects.secrets.create.databricks import DatabricksSecretCreator
-            from mcli.api.secrets.api_create_secret import create_secret
-            s = DatabricksSecretCreator().create(name=databricks_secret_name, host=workspace_url, token=token)
-            print(f"successfully created databricks secret: {databricks_secret_name}")
-            create_secret(s)
+        # from mcli.api.secrets.api_delete_secrets import delete_secrets
+        # from mcli.models.mcli_secret import SecretType
+        # s = get_secrets(secret_types=[SecretType.databricks])
+        # need_to_create = len(s) == 0
+        # if len(s) == 1:
+        #     if s[0].name != databricks_secret_name:
+        #         delete_secrets(s)
+        #         need_to_create = True
+        #     else:
+        #         print("databricks secret already exists")
+        # if need_to_create:
+        #     from mcli.objects.secrets.create.databricks import DatabricksSecretCreator
+        #     from mcli.api.secrets.api_create_secret import create_secret
+        #     s = DatabricksSecretCreator().create(name=databricks_secret_name, host=workspace_url, token=token)
+        #     print(f"successfully created databricks secret: {databricks_secret_name}")
+        #     create_secret(s)
      else:
         logger.debug("init_connection in databricks environment")
         wc = WorkspaceClient()
@@ -122,7 +122,7 @@ def get_experiment_run_url(experiment_name: str, run_name: str):
                                                    filter_string=f'tags.run_name = "{run_name}"',
                                                    output_format='list')
       if len(runs) == 0:
-            raise ValueError(f"run {run_name} does not exist in experiment {experiment_name}")
+            return None
       elif len(runs) > 1:
             raise ValueError(f"multiple runs {run_name} exist in experiment {experiment_name}")
       else:
@@ -140,7 +140,7 @@ def _get_run_summary(run: Run, experiment_name: Optional[str] = None):
         row = row_raw.to_dict()
         if row['Status'].startswith('Running') and experiment_name is not None:
             url = get_experiment_run_url(experiment_name, run.name)
-        row['Experiment Run'] =f'<a href="{url}">Link</a>' if url is not None else ""
+        row['Experiment Run'] =f'<a href="{url}">Link</a>' if url is not None else "Waiting for mlflow run to start"
         run_rows.append(row)
     
     df = pd.DataFrame(run_rows)
@@ -159,6 +159,16 @@ def _wait_for_run_status(run: Run, status: RunStatus, inclusive: bool = True):
         run =  get_run(run_name)
         logger.debug(f"run status {run.status}, expected status {status}")
     logger.debug(f"finish waiting run reached expected status {status}")
+    return run
+
+def _wait_for_run_finish(run: Run, mlflow_experiment_name: str, button: widgets.Button):
+    run_name = run.name
+    while not run.status.is_terminal():
+        time.sleep(5)
+        run =  get_run(run_name)
+        _display_run_summary(_get_run_summary(run, mlflow_experiment_name), button)
+        logger.debug(f"run status {run.status}, waiting to finish")
+    logger.debug(f"finish waiting run reached terminal with status {run.status}")
     return run
 
 def submit(config: any, scalingConfig: ScalingConfig, wait_job_to_finish: bool = False, debug: bool = False, wsfs: Optional[WSFSIntegration] = None):
@@ -204,29 +214,29 @@ def submit(config: any, scalingConfig: ScalingConfig, wait_job_to_finish: bool =
             summary = _get_run_summary(run, mlflow_experiment_name)
             display(HTML(summary.to_html(escape=False)))
         button.on_click(on_button_clicked)
-    _display_run_summary(_get_run_summary(run, mlflow_experiment_name), button)
-    run = _wait_for_run_status(run, RunStatus.RUNNING)
-    _display_run_summary(_get_run_summary(run, None), button)
+    # _display_run_summary(_get_run_summary(run, mlflow_experiment_name), button)
+    # run = _wait_for_run_status(run, RunStatus.RUNNING)
+    # _display_run_summary(_get_run_summary(run, None), button)
 
-    try_count = 0
-    while try_count < 10:
-        try_count += 1
-        time.sleep(20)
-        try:
-            run = get_run(run)
-            if run.status.is_terminal():
-                logger.debug(f"run {run_name} is in terminal state. Status {run.status}")
-                break
-            summary = _get_run_summary(run, mlflow_experiment_name)
-            _display_run_summary(summary, button)
-            break
-        except ValueError as e:
-             logger.debug(f"waiting for the MLFLow experiment run to be ready, run status {run.status}, error {e}")
-             pass
+    # try_count = 0
+    # while try_count < 10:
+    #     try_count += 1
+    #     time.sleep(20)
+    #     try:
+    #         run = get_run(run)
+    #         if run.status.is_terminal():
+    #             logger.debug(f"run {run_name} is in terminal state. Status {run.status}")
+    #             break
+    #         summary = _get_run_summary(run, mlflow_experiment_name)
+    #         _display_run_summary(summary, button)
+    #         break
+    #     except ValueError as e:
+    #          logger.debug(f"waiting for the MLFLow experiment run to be ready, run status {run.status}, error {e}")
+    #          pass
 
     if wait_job_to_finish:
         logger.debug(f"synchronously waiting for the run to finish.")
-        run = _wait_for_run_status(run, RunStatus.TERMINATING, inclusive=False)
+        run = _wait_for_run_finish(run, mlflow_experiment_name, button)
         _display_run_summary(_get_run_summary(run, mlflow_experiment_name), None)
     
     return run
