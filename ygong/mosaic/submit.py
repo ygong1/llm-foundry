@@ -24,6 +24,9 @@ from mcli.config import MCLIConfig
 from mcli.api.engine.engine import MAPIConnection
 
 logger = logging.getLogger('ygong.mosaic.submit')
+ws_url_map = {
+    "oregon.staging.cloud.databricks.com": "https://e2-dogfood.staging.cloud.databricks.com/",
+}
 
 def _set_up_environment(content: str):
     os.environ['CREDENTIALS'] = content
@@ -96,20 +99,27 @@ def _init_connection():
      # needed to set up the MLFlow query for experiment runs   
      os.environ['WORKSPACE_URL'] = workspace_url
      os.environ['MLFLOW_TRACKING_TOKEN'] = token
-     logger.debug(f"init_connection token: {os.environ['MLFLOW_TRACKING_TOKEN']}, workspace: {os.environ['WORKSPACE_URL']}, is_jobs: {os.environ.get('JOB_ID')}")
+     
+     os.environ['BROWSER_WORKSPACE_URL'] = workspace_url
+     for k, browser_url in ws_url_map.items():
+         if k in workspace_url:
+             os.environ['BROWSER_WORKSPACE_URL'] = browser_url
+             break
+         
+     # set up the mlfow tracking uri. What's the difference between this and the browser workspace url?
+     mlflow.set_tracking_uri(workspace_url)
+     logger.debug(f"init_connection token: {os.environ['MLFLOW_TRACKING_TOKEN']}, workspace: {os.environ['WORKSPACE_URL']}, " +
+                  f"is_jobs: {os.environ.get('JOB_ID')}, browser_url: {os.environ['BROWSER_WORKSPACE_URL']}")
         
 
-def get_experiment_run_url(tracking_uri: Optional[str], experiment_name: str, run_name: str):
-      if tracking_uri is None:
-          raise ValueError("tracking_uri must be provided")
-      mlflow.set_tracking_uri(tracking_uri)
-      tracking_uri = tracking_uri.rstrip("/")
+def get_experiment_run_url(experiment_name: str, run_name: str):
+      host_url = os.environ['BROWSER_WORKSPACE_URL'].rstrip("/")
       experiment = mlflow.get_experiment_by_name(name=experiment_name)
       if experiment is None:
           raise ValueError(f"experiment {experiment_name} does not exist")
       experiment_id = experiment.experiment_id
       runs = mlflow.search_runs(experiment_ids=[experiment_id],
-                                                   filter_string=f'tags.composer_run_name = "{run_name}"',
+                                                   filter_string=f'tags.run_name = "{run_name}"',
                                                    output_format='list')
       if len(runs) == 0:
             raise ValueError(f"run {run_name} does not exist in experiment {experiment_name}")
@@ -117,7 +127,7 @@ def get_experiment_run_url(tracking_uri: Optional[str], experiment_name: str, ru
             raise ValueError(f"multiple runs {run_name} exist in experiment {experiment_name}")
       else:
             run_id = runs[0].info.run_id
-            return f"{tracking_uri}/ml/experiments/{experiment_id}/runs/{run_id}"
+            return f"{host_url}/ml/experiments/{experiment_id}/runs/{run_id}"
 
 
 def _get_run_summary(run: Run, experiment_name: Optional[str] = None):
@@ -129,7 +139,7 @@ def _get_run_summary(run: Run, experiment_name: Optional[str] = None):
     for row_raw in RunDisplayItem.from_run(run, [], True):
         row = row_raw.to_dict()
         if row['Status'].startswith('Running') and experiment_name is not None:
-            url = get_experiment_run_url(os.environ.get('WORKSPACE_URL'), experiment_name, run.name)
+            url = get_experiment_run_url(experiment_name, run.name)
         row['Experiment Run'] =f'<a href="{url}">Link</a>' if url is not None else ""
         run_rows.append(row)
     
@@ -210,8 +220,8 @@ def submit(config: any, scalingConfig: ScalingConfig, wait_job_to_finish: bool =
             summary = _get_run_summary(run, mlflow_experiment_name)
             _display_run_summary(summary, button)
             break
-        except ValueError:
-             logger.debug(f"waiting for the MLFLow experiment run to be ready, run status{run.status}")
+        except ValueError as e:
+             logger.debug(f"waiting for the MLFLow experiment run to be ready, run status {run.status}, error {e}")
              pass
 
     if wait_job_to_finish:
