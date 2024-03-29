@@ -9,7 +9,7 @@ class ScalingConfig:
         self.gpusNum = gpusNum
         self.poolName = poolName
         self.priority = priority
-        self.preeemptible = preemptible
+        self.preemptible = preemptible
         self.retry_on_system_failure = retry_on_system_failure
 
     @property
