@@ -9,14 +9,25 @@ class TrainingConfig:
     def __init__(
             self,
             name: str,
-            commands: List[str],
+            entry_point: Optional[str] = None,
+            parameters: Optional[dict] = None,
+            commands: Optional[list]= None,
+            image: Optional[str] = None,
             priority: str = 'high',
             preemptible: bool = False, 
-            retry_on_system_failure: bool = False,
-            image: Optional[str] = None):
+            retry_on_system_failure: bool = False):
         self.name = name
         self.mlflow_experimentName = f"/Users/yu.gong@databricks.com/{name}"
-        self.commands = commands
+        self.debug_commands = ["cat /mnt/config/usercommand.bash", 'echo "\n===================\n"',"cat /mnt/config/parameters.yaml"]
+        
+        self.parameters = parameters if parameters is not None else {}
+        if entry_point is not None and commands is None:
+            self.commands = [f"~/llm-foundry/scripts/train/launcher.py {entry_point} /mnt/config/parameters.yaml"]
+        elif entry_point is None and commands is not None:
+            self.commands = commands
+        else:
+            raise ValueError("Either entry_point or commands must be provided and they cannot be provided at the same time.")
+        
         self.image = image if image is not None else 'mosaicml/llm-foundry:2.2.1_cu121_flash2-latest'
         self.priority = priority
         self.preemptible = preemptible
@@ -50,7 +61,7 @@ class TrainingConfig:
         return RunConfig(
             name=self.name,
             image=self.image,
-            command="\n".join(["cat /mnt/config/usercommand.bash"] + commands),
+            command="\n".join(self.debug_commands + commands),
             compute=scalingConfig.toCompute,
             integrations=self.hacky_integrations,
             env_variables=env_variables,
@@ -59,4 +70,5 @@ class TrainingConfig:
                 'preemptible': self.preemptible,
                 'retry_on_system_failure': self.retry_on_system_failure
             },
+            parameters=self.parameters
         )
