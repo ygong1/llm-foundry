@@ -131,20 +131,22 @@ def get_experiment_run_url(experiment_name: str, run_name: str):
 
 
 def _get_run_summary(run: Run, experiment_name: Optional[str] = None):
-    url = None
-        
     run_rows = []
+    experiment_run_link = None
 
     # Copy pasted from mcli to display the the resumption status of the run.
     for row_raw in RunDisplayItem.from_run(run, [], True):
         row = row_raw.to_dict()
         if row['Status'].startswith('Running') and experiment_name is not None:
-            url = get_experiment_run_url(experiment_name, run.name)
-        row['Experiment Run'] =f'<a href="{url}">Link</a>' if url is not None else ""
+            try:
+                experiment_run_link = get_experiment_run_url(experiment_name, run.name)
+            except ValueError as e:
+                logger.debug(f"failed to get the experiment run url: {e}") 
+        row['Experiment Run'] =f'<a href="{experiment_run_link}">Link</a>' if experiment_run_link is not None else ""
         run_rows.append(row)
     
     df = pd.DataFrame(run_rows)
-    return df
+    return df, experiment_run_link
 
 def _display_run_summary(summary: pd.DataFrame, cancel_button: Optional[widgets.Button]):
     clear_output(wait=True)
@@ -152,14 +154,40 @@ def _display_run_summary(summary: pd.DataFrame, cancel_button: Optional[widgets.
         display(cancel_button)
     display(HTML(summary.to_html(escape=False)))
 
-def _wait_for_run_status(run: Run, status: RunStatus, inclusive: bool = True):
-    run_name = run.name
-    while not run.status.after(status, inclusive=inclusive):
-        time.sleep(5)
-        run =  get_run(run_name)
-        logger.debug(f"run status {run.status}, expected status {status}")
-    logger.debug(f"finish waiting run reached expected status {status}")
-    return run
+def _monitor_run(run: Run, wait_job_to_finish: bool, experiment_name:str, log_cycle: int = 30, button: Optional[widgets.Button] = None):
+    previous_run_status = None
+    experiment_run_link = None
+    cycle = 0
+    while True:
+        run = run.refresh()
+        if previous_run_status is not None and run.status == previous_run_status and experiment_run_link is not None:
+            cycle =  (cycle + 1) % log_cycle
+            if cycle == 0:
+                logger.debug(f"run {run.name} is still in the same status {run.status}")
+           
+        else:
+            logger.debug(f"run {run.name} states changed {previous_run_status} --> {run.status}")
+            summary, run_link = _get_run_summary(run, experiment_name=experiment_name)
+            if previous_run_status != run.status:
+                _display_run_summary(summary, button if run.status == RunStatus.RUNNING else None)
+            elif experiment_run_link is None and run_link is not None:
+                experiment_run_link = run_link
+                _display_run_summary(summary, button)
+            previous_run_status = run.status
+
+        if run.status.is_terminal():
+                logger.debug(f"exist monitoring: run {run.name} is in terminal state. Status {run.status}")
+                break    
+
+        if wait_job_to_finish:
+            if run.status.is_terminal():
+                logger.debug(f"exist monitoring: run {run.name} is in terminal state. Status {run.status}")
+                break    
+        else:
+            if run.status == RunStatus.RUNNING:
+                logger.debug(f"exist monitoring: run {run.name} is running now")
+                break
+        time.sleep(1)
 
 def submit(config: any, scalingConfig: ScalingConfig, wait_job_to_finish: bool = False, debug: bool = False, wsfs: Optional[WSFSIntegration] = None):
     if debug:
@@ -194,39 +222,12 @@ def submit(config: any, scalingConfig: ScalingConfig, wait_job_to_finish: bool =
         button = None
     else:
         button = widgets.Button(description="cancel the run")
-        def on_button_clicked():
-            logger.debug(f"cancel button clicked")
-            clear_output(wait=False)
+        def on_button_clicked(b):
             run = get_run(run_name)
             run.stop()
-            logger.debug(f"run {run_name} is cancelled")
-            run = _wait_for_run_status(run, RunStatus.TERMINATING)
-            summary = _get_run_summary(run, mlflow_experiment_name)
-            display(HTML(summary.to_html(escape=False)))
+            _monitor_run(run, wait_job_to_finish=True, mlflow_experiment_name=mlflow_experiment_name, button=None)
         button.on_click(on_button_clicked)
-    _display_run_summary(_get_run_summary(run, mlflow_experiment_name), button)
-    run = _wait_for_run_status(run, RunStatus.RUNNING)
-    _display_run_summary(_get_run_summary(run, None), button)
-
-    try_count = 0
-    while try_count < 10:
-        try_count += 1
-        time.sleep(20)
-        try:
-            run = get_run(run)
-            if run.status.is_terminal():
-                logger.debug(f"run {run_name} is in terminal state. Status {run.status}")
-                break
-            summary = _get_run_summary(run, mlflow_experiment_name)
-            _display_run_summary(summary, button)
-            break
-        except ValueError as e:
-             logger.debug(f"waiting for the MLFLow experiment run to be ready, run status {run.status}, error {e}")
-             pass
-
-    if wait_job_to_finish:
-        logger.debug(f"synchronously waiting for the run to finish.")
-        run = _wait_for_run_status(run, RunStatus.TERMINATING, inclusive=False)
-        _display_run_summary(_get_run_summary(run, mlflow_experiment_name), None)
+        
+    _monitor_run(run, wait_job_to_finish, mlflow_experiment_name, button=button)
     
     return run
