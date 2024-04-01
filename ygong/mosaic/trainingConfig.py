@@ -59,10 +59,6 @@ class TrainingConfig:
             compute=scalingConfig.toCompute,
             integrations=self.hacky_integrations,
             env_variables=env_variables,
-            scheduling={
-                'priority': scalingConfig.priority,
-                'preemptible': scalingConfig.preemptible,
-                'retry_on_system_failure': scalingConfig.retry_on_system_failure
-            },
+            scheduling=scalingConfig.toScheduling,
             parameters=self.parameters
         )

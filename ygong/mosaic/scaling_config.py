@@ -19,3 +19,11 @@ class ScalingConfig:
             'gpu_type': 'a100_80gb',
             'cluster': self.poolName
         }
+    
+    @property
+    def toScheduling(self):
+        return {
+            'priority': self.priority,
+            'preemptible': self.preemptible,
+            'retry_on_system_failure': self.retry_on_system_failure
+        }
