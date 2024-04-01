@@ -222,7 +222,7 @@ def submit(config: any, scalingConfig: ScalingConfig, wait_job_to_finish: bool =
         button = None
     else:
         button = widgets.Button(description="cancel the run")
-        def on_button_clicked(b):
+        def on_button_clicked():
             run = get_run(run_name)
             run.stop()
             _monitor_run(run, wait_job_to_finish=True, mlflow_experiment_name=mlflow_experiment_name, button=None)

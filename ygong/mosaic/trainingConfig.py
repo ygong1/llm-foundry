@@ -59,5 +59,6 @@ class TrainingConfig:
             compute=scalingConfig.toCompute,
             integrations=self.hacky_integrations,
             env_variables=env_variables,
+            scheduling=scalingConfig.toScheduling,
             parameters=self.parameters
         )
