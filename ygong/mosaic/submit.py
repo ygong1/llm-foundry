@@ -130,7 +130,7 @@ def get_experiment_run_url(experiment_name: str, run_name: str):
             return f"{host_url}/ml/experiments/{experiment_id}/runs/{run_id}"
 
 
-def _get_run_summary(run: Run, experiment_name: Optional[str] = None):
+def _get_run_summary(run: Run, experiment_name: Optional[str] = None, print_error: bool = False):
     run_rows = []
     experiment_run_link = None
 
@@ -141,7 +141,8 @@ def _get_run_summary(run: Run, experiment_name: Optional[str] = None):
             try:
                 experiment_run_link = get_experiment_run_url(experiment_name, run.name)
             except ValueError as e:
-                logger.debug(f"failed to get the experiment run url: {e}") 
+                if print_error:
+                    logger.debug(f"failed to get the experiment run url: {e}") 
         row['Experiment Run'] =f'<a href="{experiment_run_link}">Link</a>' if experiment_run_link is not None else ""
         run_rows.append(row)
     
@@ -160,14 +161,15 @@ def _monitor_run(run: Run, wait_job_to_finish: bool, experiment_name:str, log_cy
     cycle = 0
     while True:
         run = run.refresh()
+        cycle =  (cycle + 1) % log_cycle
         if previous_run_status is not None and run.status == previous_run_status and experiment_run_link is not None:
-            cycle =  (cycle + 1) % log_cycle
             if cycle == 0:
                 logger.debug(f"run {run.name} is still in the same status {run.status}")
            
         else:
-            logger.debug(f"run {run.name} states changed {previous_run_status} --> {run.status}")
-            summary, run_link = _get_run_summary(run, experiment_name=experiment_name)
+            if cycle == 0:
+                logger.debug(f"run {run.name} states changed {previous_run_status} --> {run.status}")
+            summary, run_link = _get_run_summary(run, experiment_name=experiment_name, print_error=(cycle == 0))
             if previous_run_status != run.status:
                 _display_run_summary(summary, button if run.status == RunStatus.RUNNING else None)
             elif experiment_run_link is None and run_link is not None:
