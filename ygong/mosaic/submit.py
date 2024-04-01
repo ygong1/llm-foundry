@@ -64,22 +64,22 @@ def _init_connection():
         # clean up the old secret. MosaicML doesn't support multiple databricks secrets
         # would have to clean up the old secret if it exists
         from mcli.api.secrets.api_get_secrets import get_secrets
-        # from mcli.api.secrets.api_delete_secrets import delete_secrets
-        # from mcli.models.mcli_secret import SecretType
-        # s = get_secrets(secret_types=[SecretType.databricks])
-        # need_to_create = len(s) == 0
-        # if len(s) == 1:
-        #     if s[0].name != databricks_secret_name:
-        #         delete_secrets(s)
-        #         need_to_create = True
-        #     else:
-        #         print("databricks secret already exists")
-        # if need_to_create:
-        #     from mcli.objects.secrets.create.databricks import DatabricksSecretCreator
-        #     from mcli.api.secrets.api_create_secret import create_secret
-        #     s = DatabricksSecretCreator().create(name=databricks_secret_name, host=workspace_url, token=token)
-        #     print(f"successfully created databricks secret: {databricks_secret_name}")
-        #     create_secret(s)
+        from mcli.api.secrets.api_delete_secrets import delete_secrets
+        from mcli.models.mcli_secret import SecretType
+        s = get_secrets(secret_types=[SecretType.databricks])
+        need_to_create = len(s) == 0
+        if len(s) == 1:
+            if s[0].name != databricks_secret_name:
+                delete_secrets(s)
+                need_to_create = True
+            else:
+                print("databricks secret already exists")
+        if need_to_create:
+            from mcli.objects.secrets.create.databricks import DatabricksSecretCreator
+            from mcli.api.secrets.api_create_secret import create_secret
+            s = DatabricksSecretCreator().create(name=databricks_secret_name, host=workspace_url, token=token)
+            print(f"successfully created databricks secret: {databricks_secret_name}")
+            create_secret(s)
      else:
         logger.debug("init_connection in databricks environment")
         wc = WorkspaceClient()
@@ -122,7 +122,7 @@ def get_experiment_run_url(experiment_name: str, run_name: str):
                                                    filter_string=f'tags.run_name = "{run_name}"',
                                                    output_format='list')
       if len(runs) == 0:
-            return None
+            raise ValueError(f"run {run_name} does not exist in experiment {experiment_name}")
       elif len(runs) > 1:
             raise ValueError(f"multiple runs {run_name} exist in experiment {experiment_name}")
       else:

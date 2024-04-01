@@ -15,7 +15,7 @@ class TrainingConfig:
             image: Optional[str] = None):
         self.name = name
         self.mlflow_experimentName = f"/Users/yu.gong@databricks.com/{name}"
-        self.debug_commands = ["cat /mnt/config/usercommand.bash", 'echo "\n===================\n"',"cat /mnt/config/parameters.yaml", "echo $DATABRICKS_HOST", "echo $DATABRICKS_TOKEN"]
+        self.debug_commands = ["cat /mnt/config/usercommand.bash", 'echo "\n===================\n"',"cat /mnt/config/parameters.yaml"]
         
         self.parameters = parameters if parameters is not None else {}
         if entry_point is not None and commands is None:
